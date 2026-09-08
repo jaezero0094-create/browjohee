@@ -1,0 +1,1379 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>브로우조히 임시 예약</title>
+<link rel="stylesheet" as="style" crossorigin
+  href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+<style>
+  /* ============ 설정하기 쉬운 값들은 CONFIG (하단 script) 에서 관리합니다 ============ */
+
+  :root{
+    --bg: #FBF8F5;
+    --surface: #FFFFFF;
+    --surface-muted: #F3EEE9;
+    --border: #EAE2DA;
+
+    --text: #2A2119;
+    --text-soft: #8B7E73;
+    --text-faint: #B4A99D;
+
+    --accent: #9C6B50;
+    --accent-dark: #7A4E39;
+    --accent-soft-bg: #F2E4DB;
+
+    --info-bg: #FFFFFF;
+
+    --disabled-bg: #EFEBE6;
+    --disabled-text: #B6ACA1;
+
+    --success-bg: #EAF1EA;
+    --success-text: #47614C;
+
+    --shadow-card: 0 2px 14px rgba(42, 33, 25, 0.05);
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --radius-sm: 10px;
+  }
+
+  *{ box-sizing: border-box; }
+
+  html, body{
+    margin:0; padding:0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont,
+      'SUIT', 'Noto Sans KR', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button{ font-family: inherit; }
+
+  .page{
+    max-width: 460px;
+    margin: 0 auto;
+    padding: 24px 20px 96px;
+    min-height: 100vh;
+  }
+
+  /* ---------- 브랜드 헤더 ---------- */
+  .brand-row{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .brand-name{
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .brand-badge{
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent-dark);
+    background: var(--accent-soft-bg);
+    padding: 5px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  /* ---------- 카드 공통 ---------- */
+  .card{
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    padding: 20px;
+  }
+
+  /* ---------- 안내 배너 ---------- */
+  .banner{
+    background: var(--info-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 18px 20px;
+    margin-bottom: 16px;
+  }
+  .banner-title{
+    font-size: 14.5px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.6;
+    margin: 0 0 10px;
+  }
+  .banner-sub{
+    font-size: 12.5px;
+    color: var(--text-soft);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  /* ---------- 업체 정보 ---------- */
+  .shop-info{
+    margin-bottom: 24px;
+  }
+  .shop-info-name{
+    font-size: 17px;
+    font-weight: 600;
+    margin: 0 0 6px;
+  }
+  .shop-info-hours{
+    font-size: 14px;
+    color: var(--text-soft);
+    line-height: 1.7;
+    margin: 0;
+  }
+  .shop-info-phone{
+    display: inline-block;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent-dark);
+    text-decoration: none;
+    margin-top: 6px;
+  }
+
+  /* ---------- 섹션 타이틀 ---------- */
+  .section-title{
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0 0 12px;
+  }
+  .section{
+    margin-bottom: 26px;
+  }
+
+  /* ---------- 날짜 선택 ---------- */
+  .date-scroller{
+    display:flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .date-scroller::-webkit-scrollbar{ display:none; }
+
+  .date-chip{
+    flex: 0 0 auto;
+    width: 56px;
+    padding: 10px 0 12px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    display:flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+  }
+  .date-chip .dow{
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-soft);
+  }
+  .date-chip .num{
+    font-size: 15px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+  }
+  .date-chip.active{
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .date-chip.active .dow,
+  .date-chip.active .num{
+    color: #fff;
+  }
+
+  /* ---------- 시간 슬롯 ---------- */
+  .time-grid{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  .time-slot{
+    padding: 12px 4px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 14px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    text-align:center;
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+  }
+  .time-slot.selected{
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: 600;
+  }
+  .time-slot.closed{
+    background: var(--disabled-bg);
+    border-color: var(--disabled-bg);
+    color: var(--disabled-text);
+    cursor: not-allowed;
+  }
+  .time-slot .status{
+    display:block;
+    font-size: 11px;
+    font-weight: 500;
+    margin-top: 2px;
+    color: var(--text-soft);
+  }
+  .time-slot.closed .status{ color: var(--disabled-text); }
+  .time-slot.selected .status{ color: rgba(255,255,255,0.85); }
+
+  .empty-state, .loading-state{
+    padding: 32px 12px;
+    text-align:center;
+    font-size: 14px;
+    color: var(--text-soft);
+    background: var(--surface-muted);
+    border-radius: var(--radius-md);
+  }
+
+  /* ---------- 하단 고정 CTA ---------- */
+  .cta-bar{
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    display:none;
+    justify-content:center;
+    padding: 14px 20px calc(14px + env(safe-area-inset-bottom));
+    background: linear-gradient(to top, var(--bg) 60%, rgba(251,248,245,0));
+  }
+  .cta-bar.visible{ display:flex; }
+  .cta-inner{
+    width:100%;
+    max-width: 460px;
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 6px 24px rgba(42,33,25,0.10);
+    padding: 14px 16px;
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .cta-label{
+    font-size: 13.5px;
+    color: var(--text-soft);
+    line-height: 1.4;
+  }
+  .cta-label strong{
+    display:block;
+    font-size: 15px;
+    color: var(--text);
+    font-weight: 600;
+  }
+  .btn-primary{
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 12px 18px;
+    font-size: 14.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .btn-primary:active{ opacity: 0.88; }
+
+  /* ---------- 푸터 ---------- */
+  .footer{
+    margin-top: 36px;
+    text-align:center;
+  }
+  .footer p{
+    font-size: 12px;
+    color: var(--text-faint);
+    line-height: 1.7;
+    margin: 0 0 10px;
+  }
+  .owner-link{
+    background:none;
+    border:none;
+    font-size: 11px;
+    color: var(--text-faint);
+    cursor:pointer;
+    padding: 4px 10px;
+    opacity: 0.6;
+  }
+
+  /* ---------- 모달 공통 ---------- */
+  .overlay{
+    display:none;
+    position: fixed;
+    inset: 0;
+    background: rgba(42,33,25,0.32);
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 50;
+  }
+  .overlay.visible{ display:flex; }
+  .sheet{
+    width:100%;
+    max-width: 460px;
+    background: var(--surface);
+    border-radius: 22px 22px 0 0;
+    padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
+    max-height: 86vh;
+    overflow-y: auto;
+  }
+  .sheet-title{
+    font-size: 17px;
+    font-weight: 600;
+    margin: 0 0 4px;
+  }
+  .sheet-sub{
+    font-size: 13px;
+    color: var(--text-soft);
+    margin: 0 0 20px;
+    line-height: 1.6;
+  }
+  .field{
+    margin-bottom: 14px;
+  }
+  .field label{
+    display:block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-soft);
+    margin-bottom: 6px;
+  }
+  .field select{
+    width:100%;
+    border: 1px solid var(--border);
+    background: var(--surface-muted);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    font-size: 14.5px;
+    font-family: inherit;
+    color: var(--text);
+  }
+  .field input, .field textarea{
+    width:100%;
+    border: 1px solid var(--border);
+    background: var(--surface-muted);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    font-size: 14.5px;
+    font-family: inherit;
+    color: var(--text);
+  }
+  .field input:focus, .field textarea:focus{
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+    background: var(--surface);
+  }
+  .field textarea{ resize: vertical; min-height: 64px; }
+
+  .deposit-note{
+    background: var(--surface-muted);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    font-size: 12.5px;
+    color: var(--text-soft);
+    line-height: 1.6;
+    margin-bottom: 18px;
+  }
+
+  .sheet-actions{
+    display:flex;
+    gap: 10px;
+  }
+  .btn-ghost{
+    flex: 0 0 auto;
+    background: var(--surface-muted);
+    color: var(--text-soft);
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 13px 18px;
+    font-size: 14.5px;
+    font-weight: 600;
+    cursor:pointer;
+  }
+  .sheet-actions .btn-primary{ flex:1; }
+
+  .success-box{
+    text-align:center;
+    padding: 12px 4px 4px;
+  }
+  .success-icon{
+    width: 48px; height:48px;
+    margin: 0 auto 14px;
+    border-radius: 50%;
+    background: var(--success-bg);
+    display:flex; align-items:center; justify-content:center;
+    color: var(--success-text);
+    font-size: 22px;
+    font-weight: 700;
+  }
+  .success-box h3{
+    font-size: 16px;
+    margin: 0 0 8px;
+  }
+  .success-box p{
+    font-size: 13.5px;
+    color: var(--text-soft);
+    line-height: 1.6;
+    margin: 0 0 20px;
+  }
+
+  /* ---------- 사장님 패널 ---------- */
+  .owner-sheet{ max-width: 460px; }
+  .booking-row{
+    border-bottom: 1px solid var(--border);
+    padding: 12px 0;
+    font-size: 13.5px;
+  }
+  .booking-row:last-child{ border-bottom:none; }
+  .booking-row .b-time{
+    font-weight: 600;
+    margin-bottom: 3px;
+  }
+  .booking-row .b-meta{
+    color: var(--text-soft);
+    line-height: 1.6;
+  }
+  .owner-empty{
+    color: var(--text-soft);
+    font-size: 13.5px;
+    text-align:center;
+    padding: 20px 0;
+  }
+  .owner-actions{
+    display:flex;
+    gap:8px;
+    margin-top: 16px;
+  }
+  .btn-reset{
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-faint);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    font-size: 12.5px;
+    cursor:pointer;
+  }
+
+  /* ---------- 메뉴판 ---------- */
+  .menu-category{
+    font-size: 16px;
+    font-weight: 600;
+    margin: 22px 0 4px;
+  }
+  .menu-category:first-of-type{ margin-top: 0; }
+  .menu-subgroup{
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--accent-dark);
+    margin: 18px 0 4px;
+  }
+  .menu-item{
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .menu-item:last-child{ border-bottom: none; }
+  .menu-item-head{
+    display:flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .menu-item-name{
+    font-size: 14.5px;
+    font-weight: 600;
+  }
+  .menu-badge{
+    display:inline-block;
+    margin-left: 6px;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #fff;
+    background: var(--accent);
+    padding: 2px 6px;
+    border-radius: 6px;
+    vertical-align: middle;
+  }
+  .menu-item-price{
+    font-size: 14.5px;
+    font-weight: 600;
+    color: var(--accent-dark);
+    white-space: nowrap;
+  }
+  .menu-process, .menu-note{
+    font-size: 12px;
+    color: var(--text-soft);
+    margin: 4px 0 0;
+  }
+  .menu-desc{
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.6;
+    margin: 8px 0 0;
+  }
+  .menu-bullets{
+    margin: 8px 0 0;
+    padding-left: 16px;
+  }
+  .menu-bullets li{
+    font-size: 13px;
+    color: var(--text-soft);
+    line-height: 1.7;
+  }
+  .menu-highlight{
+    font-size: 12.5px;
+    color: var(--accent-dark);
+    font-weight: 600;
+    margin: 8px 0 0;
+  }
+  .menu-recommend{
+    font-size: 12px;
+    color: var(--text-soft);
+    background: var(--surface-muted);
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin: 8px 0 0;
+    line-height: 1.6;
+  }
+  .menu-divider{
+    height: 1px;
+    background: var(--border);
+    margin: 20px 0;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="brand-row">
+    <div class="brand-name" id="brandName">브로우조히 임시 예약</div>
+    <div class="brand-badge">임시 운영중</div>
+  </div>
+
+  <div class="banner">
+    <p class="banner-title">네이버 예약페이지 복구 전 임시 예약 페이지를 운영하고 있습니다.</p>
+    <p class="banner-sub">예약 신청 후 문자를 꼭 확인해주세요.</p>
+  </div>
+
+  <div class="card shop-info">
+    <p class="shop-info-hours" id="shopHours">평일 11:30 – 21:00 · 주말 11:00 – 20:00</p>
+    <a class="shop-info-phone" id="shopPhone" href="#">전화 문의</a>
+    <button class="btn-ghost" id="menuBoardBtn" type="button" style="width:100%; margin-top:14px;">메뉴판 보기</button>
+  </div>
+
+  <div class="section">
+    <p class="section-title">날짜 선택</p>
+    <div class="date-scroller" id="dateScroller"></div>
+  </div>
+
+  <div class="section">
+    <p class="section-title">시간 선택</p>
+    <div id="timeGrid"><div class="loading-state">예약 현황을 불러오는 중...</div></div>
+  </div>
+
+  <div class="footer">
+    <p id="footerNotice" style="cursor:pointer;">본 페이지는 네이버 예약 정상화 전까지 임시로 운영됩니다.</p>
+  </div>
+
+</div>
+
+<div class="cta-bar" id="ctaBar">
+  <div class="cta-inner">
+    <div class="cta-label" id="ctaLabel">선택한 시간</div>
+    <button class="btn-primary" id="ctaButton" type="button">예약 신청하기</button>
+  </div>
+</div>
+
+<!-- 예약 신청 모달 -->
+<div class="overlay" id="modalOverlay">
+  <div class="sheet" id="modalSheet">
+    <!-- JS로 채워짐 -->
+  </div>
+</div>
+
+<!-- 메뉴판 모달 -->
+<div class="overlay" id="menuOverlay">
+  <div class="sheet" id="menuSheet">
+    <!-- JS로 채워짐 -->
+  </div>
+</div>
+
+<!-- 공용 알림/확인/PIN 모달 -->
+<div class="overlay" id="genericOverlay">
+  <div class="sheet" id="genericSheet">
+    <!-- JS로 채워짐 -->
+  </div>
+</div>
+
+<!-- 사장님 확인 모달 -->
+<div class="overlay" id="ownerOverlay">
+  <div class="sheet owner-sheet" id="ownerSheet">
+    <!-- JS로 채워짐 -->
+  </div>
+</div>
+
+<script>
+(function(){
+
+  /* ============================================================
+     CONFIG — 업체 정보나 운영시간이 바뀌면 이 부분만 수정하세요.
+     ============================================================ */
+  const CONFIG = {
+    shopName: '브로우조히 마곡본점',
+    weekdayHours: { start: [11,30], end: [21,0] },   // 평일 11:30~21:00
+    weekendHours: { start: [11,0], end: [20,0] },     // 주말 11:00~20:00
+    slotMinutes: 30,          // 시간 슬롯 간격(분)
+    lastSlotBufferMin: 30,    // 마감 시간 전 마지막 예약 가능 시각까지 여유(분)
+    daysAhead: 14,            // 며칠치 날짜를 보여줄지
+    closedDates: ['2026-09-15'],          // 정기휴무일 등 강제 휴무 날짜. 예: ['2026-09-15']
+    ownerPin: '1234',         // 사장님 확인 화면 기본 PIN (최초 1회용, 이후엔 화면에서 변경 가능)
+    storageKey: 'browjohi_bookings_v1',
+    manualBlockKey: 'browjohi_manual_blocks_v1',   // 사장님이 직접 마감 처리한 시간 목록 저장용
+    pinStorageKey: 'browjohi_owner_pin_v1',         // 변경된 PIN 저장용
+    shopPhone: '010-0000-0000'   // 문의 전화번호. 실제 번호로 꼭 바꿔주세요
+  };
+
+  document.getElementById('brandName').textContent = CONFIG.shopName;
+  const phoneEl = document.getElementById('shopPhone');
+  phoneEl.textContent = '전화 문의 · ' + CONFIG.shopPhone;
+  phoneEl.href = 'tel:' + CONFIG.shopPhone.replace(/[^0-9+]/g, '');
+
+  /* ============================================================
+     메뉴판 — 메뉴/가격이 바뀌면 이 배열만 수정하세요.
+     ============================================================ */
+  const MENU = [
+    {
+      category: '페이스 왁싱',
+      items: [
+        {
+          name: '디자인 브로우 (눈썹 왁싱)',
+          price: 28000,
+          process: '왁스 중심 + 족집게, 가위 보조',
+          note: '기존 관리 방식 그대로 진행됩니다',
+          desc: '단순 잔털 제거가 아닌, 눈썹 형태를 디자인해 인상을 완성하는 전문 브로우 왁싱입니다.',
+          bullets: ['깔끔한 라인 정리', '잔털 제거 + 기본 숱 정리 + 길이 정리']
+        },
+        {
+          name: '디자인 브로우 (눈썹 왁싱)',
+          badge: 'NEW',
+          price: 36000,
+          process: '왁스 + 족집게 + 가위 사용',
+          desc: '깔끔한 라인 왁싱에 정교한 숱 조정을 더한 콤보 시술로, 뭉치거나 진한 부분 밀도를 족집게로 세밀하게 조절합니다.',
+          bullets: ['깔끔한 라인 정리', '잔털 제거 + 기본 숱 정리 + 길이 정리', '밀도 밸런싱'],
+          highlight: '더 더 더 연하고 부드러운 눈썹 연출',
+          recommend: '왁싱 후에도 숱이 답답하고 어색해 보였던 분께 추천드려요'
+        },
+        {
+          name: '디자인 브로우 (눈썹 트위징)',
+          price: 45000,
+          process: '족집게(핀셋) + 가위만 사용',
+          desc: '왁스 사용 없이 핀셋과 가위만을 활용해 눈썹을 디자인합니다.',
+          bullets: ['깔끔한 라인 정리', '잔털 제거 + 기본 숱 정리 + 길이 정리', '(선택 사항) 밀도 밸런싱'],
+          highlight: '더 더 더 연하고 부드러운 눈썹 연출 · 피부 자극 최소화 · 왁싱 부작용 걱정 없음 (스킨 탈락, 트러블, 알러지)',
+          recommend: '초민감성 피부, 최근 수술 시술 이력 있으신 분, 중요한 일정을 앞두고 계신 분들께 추천드립니다.'
+        },
+        { name: '립(인중)', price: 12000 },
+        { name: '헤어라인(이마 포함)', price: 28000 },
+        { name: '볼', price: 16000 },
+        { name: '턱', price: 16000 },
+        { name: '구레나룻', price: 22000 },
+        { name: '뒷목', price: 30000 }
+      ],
+      subgroups: [
+        {
+          name: '패키지 시술 (할인 적용)',
+          items: [
+            { name: '브로우+립', price: 35000 },
+            { name: '브로우+헤어', price: 54000 },
+            { name: '브로우+립+헤어', price: 59000 },
+            { name: '풀페이스 (볼 제외)', price: 92000 },
+            { name: '풀페이스 (볼 포함)', price: 102000 },
+            { name: '웨딩패키지 (풀페이스 + 볼 + 뒷목)', price: 127000 }
+          ]
+        }
+      ]
+    },
+    {
+      category: '속눈썹 펌',
+      items: [
+        { name: '수분 펌', price: 35000, desc: '수분 밤을 함께 사용하여 수분을 공급해줍니다.' },
+        { name: '클리닉 펌', price: 45000, desc: '단계별로 영양을 공급하여 윤기와 탄력을 주며 PH농도 조절로 손상을 최소화합니다.', recommend: '주기적으로 펌을 하시는 분, 손상모, 얇은 모를 가진 분들께 추천합니다.' },
+        { name: '틴팅 펌', price: 50000, desc: '모발을 블랙으로 코팅하여 마스카라한듯 눈매를 또렷하게 만들어줍니다.', recommend: '얇은 모, 갈색 모, 마스카라 귀찮은 분들께 추천합니다.' },
+        { name: '클리닉 펌 + 틴팅 펌', price: 55000 }
+      ]
+    }
+  ];
+
+  function formatPrice(n){ return n.toLocaleString('ko-KR') + '원'; }
+
+  function menuItemHTML(item){
+    return `
+      <div class="menu-item">
+        <div class="menu-item-head">
+          <span class="menu-item-name">${item.name}${item.badge ? `<span class="menu-badge">${item.badge}</span>` : ''}</span>
+          <span class="menu-item-price">${formatPrice(item.price)}</span>
+        </div>
+        ${item.process ? `<p class="menu-process">${item.process}</p>` : ''}
+        ${item.note ? `<p class="menu-note">${item.note}</p>` : ''}
+        ${item.desc ? `<p class="menu-desc">${item.desc}</p>` : ''}
+        ${item.bullets ? `<ul class="menu-bullets">${item.bullets.map(b => `<li>${b}</li>`).join('')}</ul>` : ''}
+        ${item.highlight ? `<p class="menu-highlight">${item.highlight}</p>` : ''}
+        ${item.recommend ? `<p class="menu-recommend">추천 · ${item.recommend}</p>` : ''}
+      </div>
+    `;
+  }
+
+  function menuCategoryHTML(cat){
+    let html = `<h3 class="menu-category">${cat.category}</h3>`;
+    html += cat.items.map(menuItemHTML).join('');
+    if (cat.subgroups){
+      cat.subgroups.forEach(sg => {
+        html += `<h4 class="menu-subgroup">${sg.name}</h4>`;
+        html += sg.items.map(menuItemHTML).join('');
+      });
+    }
+    return html;
+  }
+
+  function menuOptionsHTML(){
+    let html = '<option value="">선택 안 함 (상담 후 결정)</option>';
+    MENU.forEach(cat => {
+      html += `<optgroup label="${cat.category}">`;
+      cat.items.forEach(it => {
+        const val = `${it.name} (${formatPrice(it.price)})`;
+        html += `<option value="${val}">${it.name} · ${formatPrice(it.price)}</option>`;
+      });
+      if (cat.subgroups){
+        cat.subgroups.forEach(sg => {
+          sg.items.forEach(it => {
+            const val = `${it.name} (${formatPrice(it.price)})`;
+            html += `<option value="${val}">${it.name} · ${formatPrice(it.price)}</option>`;
+          });
+        });
+      }
+      html += '</optgroup>';
+    });
+    return html;
+  }
+
+  /* ============================================================
+     유틸
+     ============================================================ */
+  const pad = n => String(n).padStart(2,'0');
+  const DOW = ['일','월','화','수','목','금','토'];
+
+  function dateKey(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+  function isWeekend(d){ const w = d.getDay(); return w===0 || w===6; }
+
+  function generateDates(count){
+    const today = new Date(); today.setHours(0,0,0,0);
+    const arr = [];
+    for(let i=0;i<count;i++){
+      const d = new Date(today);
+      d.setDate(today.getDate()+i);
+      arr.push(d);
+    }
+    return arr;
+  }
+
+  function generateSlots(d){
+    if (CONFIG.closedDates.includes(dateKey(d))) return [];
+    const range = isWeekend(d) ? CONFIG.weekendHours : CONFIG.weekdayHours;
+    const slots = [];
+    const cur = new Date(d); cur.setHours(range.start[0], range.start[1], 0, 0);
+    const end = new Date(d); end.setHours(range.end[0], range.end[1], 0, 0);
+    const last = new Date(end.getTime() - CONFIG.lastSlotBufferMin*60000);
+    while(cur.getTime() <= last.getTime()){
+      slots.push(`${pad(cur.getHours())}:${pad(cur.getMinutes())}`);
+      cur.setMinutes(cur.getMinutes() + CONFIG.slotMinutes);
+    }
+    return slots;
+  }
+
+  function formatTimeDisplay(hhmm){
+    const [h,m] = hhmm.split(':').map(Number);
+    const period = h < 12 ? '오전' : '오후';
+    const h12 = h % 12 === 0 ? 12 : h % 12;
+    return `${period} ${h12}:${pad(m)}`;
+  }
+
+  /* ============================================================
+     상태
+     ============================================================ */
+  const dates = generateDates(CONFIG.daysAhead);
+  const todayKey = dateKey(dates[0]);
+  let selectedDateKey = todayKey;
+  let selectedTime = null;
+  let bookedSet = new Set();       // "date_time" — 고객이 신청한 예약
+  let bookingsCache = [];          // 전체 예약 신청 목록
+  let manualBlocked = new Set();   // "date_time" — 사장님이 직접 마감시킨 시간
+  let storageOk = true;
+  let currentPin = CONFIG.ownerPin;
+
+  /* ============================================================
+     저장소 연동
+     ============================================================ */
+  async function loadBookings(){
+    try{
+      const res = await window.storage.get(CONFIG.storageKey, true);
+      const list = res && res.value ? JSON.parse(res.value) : [];
+      bookingsCache = Array.isArray(list) ? list : [];
+    }catch(e){
+      // 키가 아직 없거나(최초 실행) storage 를 쓸 수 없는 환경
+      bookingsCache = [];
+      if (!(window.storage)) storageOk = false;
+    }
+    bookedSet = new Set(bookingsCache.map(b => `${b.date}_${b.time}`));
+  }
+
+  async function saveBookings(list){
+    await window.storage.set(CONFIG.storageKey, JSON.stringify(list), true);
+  }
+
+  async function loadManualBlocks(){
+    try{
+      const res = await window.storage.get(CONFIG.manualBlockKey, true);
+      const list = res && res.value ? JSON.parse(res.value) : [];
+      manualBlocked = new Set(Array.isArray(list) ? list : []);
+    }catch(e){
+      manualBlocked = new Set();
+      if (!(window.storage)) storageOk = false;
+    }
+  }
+
+  async function saveManualBlocks(){
+    await window.storage.set(CONFIG.manualBlockKey, JSON.stringify([...manualBlocked]), true);
+  }
+
+  async function loadOwnerPin(){
+    try{
+      const res = await window.storage.get(CONFIG.pinStorageKey, true);
+      if (res && res.value){
+        const parsed = JSON.parse(res.value);
+        if (parsed && parsed.pin) currentPin = parsed.pin;
+      }
+    }catch(e){
+      // 저장된 값이 없으면 CONFIG의 기본 PIN을 그대로 사용
+    }
+  }
+
+  async function saveOwnerPin(newPin){
+    currentPin = newPin;
+    await window.storage.set(CONFIG.pinStorageKey, JSON.stringify({ pin: newPin }), true);
+  }
+
+  async function loadAll(){
+    await Promise.all([loadBookings(), loadManualBlocks()]);
+  }
+
+  /* ============================================================
+     공용 다이얼로그 (alert/confirm/prompt 대체)
+     — 일부 브라우저/미리보기 환경에서는 alert(), confirm(), prompt() 가
+       차단되어 아무 반응이 없을 수 있어, 직접 만든 모달로 대체합니다.
+     ============================================================ */
+  const genericOverlay = document.getElementById('genericOverlay');
+  const genericSheet = document.getElementById('genericSheet');
+
+  function showAlert(message){
+    return new Promise(resolve => {
+      genericSheet.innerHTML = `
+        <p class="sheet-title">안내</p>
+        <p class="sheet-sub" style="margin-bottom:20px;">${message}</p>
+        <button class="btn-primary" id="genericOk" type="button" style="width:100%;">확인</button>
+      `;
+      genericOverlay.classList.add('visible');
+      document.getElementById('genericOk').addEventListener('click', () => {
+        genericOverlay.classList.remove('visible');
+        resolve();
+      });
+    });
+  }
+
+  function showConfirm(message){
+    return new Promise(resolve => {
+      genericSheet.innerHTML = `
+        <p class="sheet-title">확인해 주세요</p>
+        <p class="sheet-sub" style="margin-bottom:20px;">${message}</p>
+        <div class="sheet-actions">
+          <button class="btn-ghost" id="genericCancel" type="button">취소</button>
+          <button class="btn-primary" id="genericConfirm" type="button">확인</button>
+        </div>
+      `;
+      genericOverlay.classList.add('visible');
+      document.getElementById('genericCancel').addEventListener('click', () => {
+        genericOverlay.classList.remove('visible');
+        resolve(false);
+      });
+      document.getElementById('genericConfirm').addEventListener('click', () => {
+        genericOverlay.classList.remove('visible');
+        resolve(true);
+      });
+    });
+  }
+
+  function showPinPrompt(){
+    return new Promise(resolve => {
+      genericSheet.innerHTML = `
+        <p class="sheet-title">사장님 확인</p>
+        <p class="sheet-sub">PIN 번호를 입력해 주세요.</p>
+        <div class="field">
+          <input id="pinInput" type="password" inputmode="numeric" placeholder="PIN 입력" />
+        </div>
+        <div class="sheet-actions">
+          <button class="btn-ghost" id="pinCancel" type="button">취소</button>
+          <button class="btn-primary" id="pinOk" type="button">확인</button>
+        </div>
+      `;
+      genericOverlay.classList.add('visible');
+      const input = document.getElementById('pinInput');
+      input.focus();
+      const submit = () => {
+        genericOverlay.classList.remove('visible');
+        resolve(input.value);
+      };
+      document.getElementById('pinOk').addEventListener('click', submit);
+      document.getElementById('pinCancel').addEventListener('click', () => {
+        genericOverlay.classList.remove('visible');
+        resolve(null);
+      });
+      input.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+    });
+  }
+
+  /* ============================================================
+     렌더링 — 날짜
+     ============================================================ */
+  const dateScroller = document.getElementById('dateScroller');
+
+  function renderDateChips(){
+    dateScroller.innerHTML = '';
+    dates.forEach(d => {
+      const key = dateKey(d);
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'date-chip' + (key === selectedDateKey ? ' active' : '');
+
+      const dow = document.createElement('span');
+      const dowIdx = d.getDay();
+      dow.className = 'dow' + (dowIdx===0 ? ' sun' : dowIdx===6 ? ' sat' : '');
+      dow.textContent = key === todayKey ? '오늘' : DOW[dowIdx];
+
+      const num = document.createElement('span');
+      num.className = 'num';
+      num.textContent = `${d.getMonth()+1}/${d.getDate()}`;
+
+      chip.appendChild(dow);
+      chip.appendChild(num);
+      chip.addEventListener('click', () => selectDate(key));
+      dateScroller.appendChild(chip);
+    });
+  }
+
+  function selectDate(key){
+    selectedDateKey = key;
+    selectedTime = null;
+    renderDateChips();
+    renderTimeGrid();
+    hideCta();
+  }
+
+  /* ============================================================
+     렌더링 — 시간 슬롯
+     ============================================================ */
+  const timeGridEl = document.getElementById('timeGrid');
+
+  function renderTimeGrid(){
+    const d = dates.find(dd => dateKey(dd) === selectedDateKey);
+    let slots = generateSlots(d);
+
+    // 오늘이면 이미 지난 시간은 목록에서 제외
+    if (selectedDateKey === todayKey){
+      const now = new Date();
+      slots = slots.filter(t => {
+        const [h,m] = t.split(':').map(Number);
+        const slotDate = new Date(d); slotDate.setHours(h,m,0,0);
+        return slotDate.getTime() > now.getTime();
+      });
+    }
+
+    if (slots.length === 0){
+      const msg = CONFIG.closedDates.includes(selectedDateKey)
+        ? '휴무일입니다.'
+        : '오늘 예약 가능한 시간이 없습니다.';
+      timeGridEl.innerHTML = `<div class="empty-state">${msg}</div>`;
+      return;
+    }
+
+    const grid = document.createElement('div');
+    grid.className = 'time-grid';
+
+    slots.forEach(time => {
+      const key = `${selectedDateKey}_${time}`;
+      const closed = bookedSet.has(key) || manualBlocked.has(key);
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'time-slot'
+        + (closed ? ' closed' : '')
+        + (!closed && selectedTime === time ? ' selected' : '');
+
+      btn.innerHTML = `${formatTimeDisplay(time)}<span class="status">${closed ? '마감' : '예약가능'}</span>`;
+
+      if (!closed){
+        btn.addEventListener('click', () => selectTime(time));
+      } else {
+        btn.disabled = true;
+      }
+      grid.appendChild(btn);
+    });
+
+    timeGridEl.innerHTML = '';
+    timeGridEl.appendChild(grid);
+  }
+
+  function selectTime(time){
+    selectedTime = time;
+    renderTimeGrid();
+    showCta();
+  }
+
+  /* ============================================================
+     하단 CTA
+     ============================================================ */
+  const ctaBar = document.getElementById('ctaBar');
+  const ctaLabel = document.getElementById('ctaLabel');
+  const ctaButton = document.getElementById('ctaButton');
+
+  function showCta(){
+    const d = dates.find(dd => dateKey(dd) === selectedDateKey);
+    const label = `${d.getMonth()+1}/${d.getDate()} (${DOW[d.getDay()]})`;
+    ctaLabel.innerHTML = `선택한 시간<strong>${label} · ${formatTimeDisplay(selectedTime)}</strong>`;
+    ctaBar.classList.add('visible');
+  }
+  function hideCta(){
+    ctaBar.classList.remove('visible');
+  }
+
+  ctaButton.addEventListener('click', openBookingModal);
+
+  /* ============================================================
+     메뉴판
+     ============================================================ */
+  const menuOverlay = document.getElementById('menuOverlay');
+  const menuSheet = document.getElementById('menuSheet');
+
+  document.getElementById('menuBoardBtn').addEventListener('click', () => {
+    menuSheet.innerHTML = `
+      <p class="sheet-title">${CONFIG.shopName} 메뉴판</p>
+      ${MENU.map(menuCategoryHTML).join('<div class="menu-divider"></div>')}
+      <button class="btn-primary" id="menuCloseBtn" type="button" style="width:100%; margin-top:16px;">닫기</button>
+    `;
+    menuOverlay.classList.add('visible');
+    document.getElementById('menuCloseBtn').addEventListener('click', () => menuOverlay.classList.remove('visible'));
+  });
+  menuOverlay.addEventListener('click', (e) => { if (e.target === menuOverlay) menuOverlay.classList.remove('visible'); });
+
+  /* ============================================================
+     예약 신청 모달
+     ============================================================ */
+  const modalOverlay = document.getElementById('modalOverlay');
+  const modalSheet = document.getElementById('modalSheet');
+
+  function openBookingModal(){
+    const d = dates.find(dd => dateKey(dd) === selectedDateKey);
+    const label = `${d.getMonth()+1}/${d.getDate()} (${DOW[d.getDay()]}) · ${formatTimeDisplay(selectedTime)}`;
+
+    modalSheet.innerHTML = `
+      <p class="sheet-title">예약 신청</p>
+      <p class="sheet-sub">${label}</p>
+      <div class="field">
+        <label for="inputName">예약자 성함</label>
+        <input id="inputName" type="text" placeholder="성함을 입력해 주세요" />
+      </div>
+      <div class="field">
+        <label for="inputPhone">연락처</label>
+        <input id="inputPhone" type="tel" placeholder="010-0000-0000" />
+      </div>
+      <div class="field">
+        <label for="inputMenu">희망 메뉴</label>
+        <select id="inputMenu">${menuOptionsHTML()}</select>
+      </div>
+      <div class="field">
+        <label for="inputMemo">요청 사항 (선택)</label>
+        <textarea id="inputMemo" placeholder="원하시는 시술이나 참고 사항을 남겨주세요"></textarea>
+      </div>
+      <div class="deposit-note">예약 신청 후 문자를 꼭 확인해주세요. 예약금 입금 전까지는 예약이 확정되지 않을 수 있습니다.</div>
+      <div class="sheet-actions">
+        <button class="btn-ghost" id="modalCancel" type="button">취소</button>
+        <button class="btn-primary" id="modalSubmit" type="button">신청 완료하기</button>
+      </div>
+    `;
+    modalOverlay.classList.add('visible');
+    document.getElementById('modalCancel').addEventListener('click', closeModal);
+    document.getElementById('modalSubmit').addEventListener('click', submitBooking);
+  }
+
+  function closeModal(){
+    modalOverlay.classList.remove('visible');
+  }
+
+  function formatPhoneForSms(phone){
+    return phone.replace(/[^0-9+]/g, '');
+  }
+
+  function buildBookingMessageText(booking, dateLabel){
+    const lines = [
+      `[${CONFIG.shopName} 예약 신청]`,
+      `일시: ${dateLabel}`,
+      `이름: ${booking.name}`,
+      `연락처: ${booking.phone}`
+    ];
+    if (booking.menu) lines.push(`메뉴: ${booking.menu}`);
+    if (booking.memo) lines.push(`요청사항: ${booking.memo}`);
+    return lines.join('\n');
+  }
+
+  async function submitBooking(){
+    const name = document.getElementById('inputName').value.trim();
+    const phone = document.getElementById('inputPhone').value.trim();
+    const menu = document.getElementById('inputMenu').value;
+    const memo = document.getElementById('inputMemo').value.trim();
+
+    if (!name){ await showAlert('성함을 입력해 주세요.'); return; }
+    if (!phone){ await showAlert('연락처를 입력해 주세요.'); return; }
+
+    const submitBtn = document.getElementById('modalSubmit');
+    submitBtn.disabled = true;
+    submitBtn.textContent = '신청 중...';
+
+    const d = dates.find(dd => dateKey(dd) === selectedDateKey);
+    const dateLabel = `${d.getMonth()+1}/${d.getDate()} (${DOW[d.getDay()]}) ${formatTimeDisplay(selectedTime)}`;
+    const key = `${selectedDateKey}_${selectedTime}`;
+
+    // 예약 현황 저장(공유 저장소)은 참고용 보조 기능이라 실패해도 신청 자체는 계속 진행합니다.
+    try{
+      await loadAll();
+      if (bookedSet.has(key) || manualBlocked.has(key)){
+        closeModal();
+        renderTimeGrid();
+        hideCta();
+        await showAlert('죄송합니다. 방금 마감된 시간이에요. 다른 시간을 선택해 주세요.');
+        return;
+      }
+    }catch(e){
+      console.warn('예약 현황 확인 실패(참고용 기능):', e);
+    }
+
+    const booking = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+      date: selectedDateKey,
+      time: selectedTime,
+      name, phone, menu, memo,
+      requestedAt: new Date().toISOString()
+    };
+
+    bookingsCache.push(booking);
+    bookedSet.add(key);
+
+    try{
+      await saveBookings(bookingsCache);
+    }catch(e){
+      // 저장에 실패해도 문자로 사장님께 직접 전달되므로 신청은 정상 진행합니다.
+      console.warn('예약 현황 저장 실패(참고용 기능):', e);
+    }
+
+    const messageText = buildBookingMessageText(booking, dateLabel);
+    const smsHref = `sms:${formatPhoneForSms(CONFIG.shopPhone)}?&body=${encodeURIComponent(messageText)}`;
+
+    showSuccess(smsHref, messageText);
+    renderTimeGrid();
+    selectedTime = null;
+    hideCta();
+  }
+
+  function showSuccess(smsHref, messageText){
+    modalSheet.innerHTML = `
+      <div class="success-box">
+        <div class="success-icon">✓</div>
+        <h3>마지막으로, 카카오톡만 보내주세요</h3>
+        <p>복사하기 눌러서 카카오채널로 전송 한 번 부탁드립니다!</p>
+        <div class="deposit-note" id="smsMessageBox" style="text-align:left; margin-top:4px; white-space:pre-line;">${messageText}</div>
+        <button class="btn-ghost" id="smsCopyBtn" type="button" style="width:100%; margin-top:10px;">내용 복사하기</button>
+        <a class="btn-primary" id="kakaoChannelBtn" href="http://pf.kakao.com/_GaxetG" target="_blank" rel="noopener" style="display:block; width:100%; text-decoration:none; text-align:center; box-sizing:border-box; margin-top:10px;">카카오채널로 보내기</a>
+        <button class="btn-ghost" id="successClose" type="button" style="width:100%; margin-top:10px;">닫기</button>
+      </div>
+    `;
+    document.getElementById('successClose').addEventListener('click', closeModal);
+    document.getElementById('smsCopyBtn').addEventListener('click', async () => {
+      try{
+        await navigator.clipboard.writeText(messageText);
+        await showAlert('복사했어요. 카카오채널에 붙여넣어 보내주세요.');
+      }catch(e){
+        console.warn('클립보드 복사 실패:', e);
+        await showAlert('복사에 실패했어요. 위 내용을 직접 길게 눌러 복사해 주세요.');
+      }
+    });
+  }
+
+  modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) closeModal(); });
+
+  /* ============================================================
+     사장님 확인 패널
+     ============================================================ */
+  const ownerOverlay = document.getElementById('ownerOverlay');
+  const ownerSheet = document.getElementById('ownerSheet');
+
+  let manageDateKey = todayKey;
+
+  document.getElementById('footerNotice').addEventListener('click', async () => {
+    await loadOwnerPin();
+    const pin = await showPinPrompt();
+    if (pin === null) return;
+    if (pin !== currentPin){
+      await showAlert('PIN이 올바르지 않습니다.');
+      return;
+    }
+    await loadAll();
+    manageDateKey = selectedDateKey;
+    renderOwnerPanel();
+    ownerOverlay.classList.add('visible');
+  });
+
+  function renderOwnerPanel(){
+    const sorted = [...bookingsCache].sort((a,b) => (a.date+a.time).localeCompare(b.date+b.time));
+    const rows = sorted.map(b => {
+      const [y,mo,da] = b.date.split('-');
+      const metaParts = [b.phone, b.menu, b.memo].filter(Boolean);
+      return `
+        <div class="booking-row">
+          <div class="b-time">${Number(mo)}/${Number(da)} · ${formatTimeDisplay(b.time)} — ${b.name}</div>
+          <div class="b-meta">${metaParts.join(' · ')}</div>
+        </div>`;
+    }).join('');
+
+    const dateOptions = dates.map(d => {
+      const key = dateKey(d);
+      const label = `${d.getMonth()+1}/${d.getDate()} (${DOW[d.getDay()]})`;
+      return `<option value="${key}" ${key === manageDateKey ? 'selected' : ''}>${label}</option>`;
+    }).join('');
+
+    ownerSheet.innerHTML = `
+      <p class="sheet-title">예약 신청 내역</p>
+      <p class="sheet-sub">총 ${bookingsCache.length}건${storageOk ? '' : ' (이 브라우저에서만 임시로 보관됨)'}</p>
+      ${sorted.length ? rows : '<p class="owner-empty">아직 접수된 예약 신청이 없습니다.</p>'}
+      <div class="owner-actions">
+        <button class="btn-ghost" id="ownerCloseBtn" type="button" style="flex:1;">닫기</button>
+        <button class="btn-reset" id="ownerResetBtn" type="button">전체 초기화</button>
+      </div>
+
+      <p class="sheet-title" style="margin-top:28px;">시간대 마감 관리</p>
+      <p class="sheet-sub">날짜를 고르고 시간을 눌러 마감/해제하세요. 이미 고객이 신청한 시간은 여기서 바꿀 수 없어요.</p>
+      <div class="field">
+        <select id="manageDateSelect">${dateOptions}</select>
+      </div>
+      <div id="manageSlotGrid"></div>
+
+      <p class="sheet-title" style="margin-top:28px;">PIN 변경</p>
+      <p class="sheet-sub">이 화면에 들어올 때 입력하는 번호를 바꿀 수 있어요.</p>
+      <div class="field">
+        <input id="newPinInput" type="password" inputmode="numeric" placeholder="새 PIN 입력" />
+      </div>
+      <button class="btn-ghost" id="pinChangeBtn" type="button" style="width:100%;">PIN 변경하기</button>
+    `;
+
+    document.getElementById('ownerCloseBtn').addEventListener('click', () => ownerOverlay.classList.remove('visible'));
+    document.getElementById('ownerResetBtn').addEventListener('click', async () => {
+      const ok = await showConfirm('모든 예약 신청 내역을 삭제할까요? 이 작업은 되돌릴 수 없습니다.');
+      if (!ok) return;
+      bookingsCache = [];
+      bookedSet = new Set();
+      try{ await saveBookings([]); }catch(e){ console.warn(e); }
+      renderOwnerPanel();
+      renderTimeGrid();
+    });
+    document.getElementById('manageDateSelect').addEventListener('change', (e) => {
+      manageDateKey = e.target.value;
+      renderManageGrid();
+    });
+
+    document.getElementById('pinChangeBtn').addEventListener('click', async () => {
+      const newPin = document.getElementById('newPinInput').value.trim();
+      if (!newPin){ await showAlert('새 PIN을 입력해 주세요.'); return; }
+      try{
+        await saveOwnerPin(newPin);
+        await showAlert('PIN이 변경되었습니다.');
+      }catch(e){
+        console.warn('PIN 저장(공유 저장소) 실패 — 이 기기에서는 계속 새 PIN이 적용됩니다:', e);
+        await showAlert('PIN이 이 화면에는 바로 적용됐어요. 다만 다른 기기와는 동기화되지 않을 수 있어요.');
+      }
+      document.getElementById('newPinInput').value = '';
+    });
+
+    renderManageGrid();
+  }
+
+  function renderManageGrid(){
+    const gridEl = document.getElementById('manageSlotGrid');
+    if (!gridEl) return;
+    const d = dates.find(dd => dateKey(dd) === manageDateKey);
+    const slots = generateSlots(d);
+
+    if (slots.length === 0){
+      gridEl.innerHTML = '<div class="empty-state">휴무일입니다.</div>';
+      return;
+    }
+
+    const grid = document.createElement('div');
+    grid.className = 'time-grid';
+
+    slots.forEach(time => {
+      const key = `${manageDateKey}_${time}`;
+      const isBooked = bookedSet.has(key);
+      const isManualClosed = manualBlocked.has(key);
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'time-slot' + ((isBooked || isManualClosed) ? ' closed' : '');
+      const statusText = isBooked ? '예약됨' : (isManualClosed ? '마감' : '예약가능');
+      btn.innerHTML = `${formatTimeDisplay(time)}<span class="status">${statusText}</span>`;
+
+      if (isBooked){
+        btn.disabled = true;
+      } else {
+        btn.addEventListener('click', async () => {
+          if (manualBlocked.has(key)) manualBlocked.delete(key);
+          else manualBlocked.add(key);
+          try{ await saveManualBlocks(); }catch(e){ console.warn(e); }
+          renderManageGrid();
+          if (manageDateKey === selectedDateKey) renderTimeGrid();
+        });
+      }
+      grid.appendChild(btn);
+    });
+
+    gridEl.innerHTML = '';
+    gridEl.appendChild(grid);
+  }
+
+  ownerOverlay.addEventListener('click', (e) => { if (e.target === ownerOverlay) ownerOverlay.classList.remove('visible'); });
+
+  /* ============================================================
+     시작
+     ============================================================ */
+  renderDateChips();
+  loadAll().then(renderTimeGrid);
+
+})();
+</script>
+</body>
+</html>
